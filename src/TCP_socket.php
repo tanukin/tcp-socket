@@ -8,13 +8,15 @@ class TCP_socket
 {
     private $socket;
     private $spawn;
+    private $childPid;
 
-    public function __construct($host = "localhost", $port = 10001)
+    public function __construct($host = "localhost", $port)
     {
         $this->socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
+        socket_set_option($this->socket, SOL_SOCKET, SO_REUSEADDR, 1);
         socket_bind($this->socket, $host, $port);
         socket_listen($this->socket, 3);
-        echo "Ожидание соединений на порту $port ...\n";
+        echo "Ожидаются соединения на порту $port ...\n";
     }
 
     public function __destruct()
@@ -23,11 +25,15 @@ class TCP_socket
         echo "Завершение работы\n";
     }
 
-    public function accept()
+    /*
+     * @param $childPid
+     */
+    public function accept(int $childPid)
     {
+        $this->childPid = $childPid;
         do {
             $this->spawn = socket_accept($this->socket);
-            echo "Получен запрос на соединение\n";
+            echo "Получен запрос на соединение (pid = $this->childPid) \n";
 
             $welcome = "\nСоединение установлено. \nНеобходимо отправить последовательность скобок для валидации.\n\nДля завершения сеанса введите команду: exit\n\n";
             socket_write($this->spawn, $welcome, strlen($welcome));
@@ -35,9 +41,7 @@ class TCP_socket
             $this->communication();
 
             socket_close($this->spawn);
-            echo "Соединение завершено.\n";
-            echo "Ожидание соединений ...\n";
-
+            echo "Соединение завершено (pid = $this->childPid).\n";
         } while (true);
 
     }
@@ -50,7 +54,7 @@ class TCP_socket
             $input = trim($input);
 
             if ($input != "") {
-                echo "Получена строка от пользователя: $input" . "\n";
+                echo "Получена строка от пользователя (pid = $this->childPid): $input" . "\n";
 
                 if ($input == "exit") {
                     break;
@@ -64,7 +68,7 @@ class TCP_socket
                 }
 
                 socket_write($this->spawn, $output . "\n", strlen($output) + 2);
-                echo "Ответ сервера: " . trim($output) . "\n";
+                echo "Ответ сервера (pid = $this->childPid): " . trim($output) . "\n";
             }
 
         } while (true);
