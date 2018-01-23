@@ -1,0 +1,57 @@
+{
+    "_readme": [
+        "This file locks the dependencies of your project to a known state",
+        "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
+        "This file is @generated automatically"
+    ],
+    "hash": "21baed3d100649e617428f7030e006c9",
+    "content-hash": "cade571feeb59747a53764c95c6f9504",
+    "packages": [
+        {
+            "name": "anikin-elets/correct-brackets",
+            "version": "1.0.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/tanukin/correct-brackets-library.git",
+                "reference": "46eae54e1addea3403fbe1df273f45eb3120284c"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/tanukin/correct-brackets-library/zipball/46eae54e1addea3403fbe1df273f45eb3120284c",
+                "reference": "46eae54e1addea3403fbe1df273f45eb3120284c",
+                "shasum": ""
+            },
+            "require": {
+                "php": "~7.1"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Library\\": "src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Anikin Ewgeny",
+                    "email": "anikin-elets@yandex.ru"
+                }
+            ],
+            "description": "Return true if the line is correct - all brackets are correctly opened and closed, or false otherwise",
+            "time": "2018-01-06 21:49:47"
+        }
+    ],
+    "packages-dev": [],
+    "aliases": [],
+    "minimum-stability": "stable",
+    "stability-flags": [],
+    "prefer-stable": false,
+    "prefer-lowest": false,
+    "platform": {
+        "php": "~7.1"
+    },
+    "platform-dev": []
+}

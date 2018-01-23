@@ -1,0 +1,19 @@
+{
+    "name": "anikin-elets/correct-brackets-socket",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Anikin Evgenij",
+            "email": "anikin-elets@yandex.ru"
+        }
+    ],
+    "require": {
+        "php": "~7.1",
+        "anikin-elets/correct-brackets": "~1.0.0"
+    },
+    "autoload":{
+        "psr-4":{
+            "socket\\":"src"
+        }
+    }
+}
