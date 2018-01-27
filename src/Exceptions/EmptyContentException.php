@@ -1,8 +1,8 @@
 <?php
 
-namespace socket\Exceptions;
+namespace Socket\Exceptions;
 
-class EmptyContentException extends \Exception
+class EmptyContentException extends ContentException
 {
 
 }

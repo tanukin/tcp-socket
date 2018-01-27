@@ -1,8 +1,8 @@
 <?php
 
-namespace socket\Exceptions;
+namespace Socket\Exceptions;
 
-class HelpContentException extends \Exception
+class HelpContentException extends ContentException
 {
 
 }
