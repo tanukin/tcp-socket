@@ -2,28 +2,23 @@
 
 namespace Socket\Logger;
 
+use Socket\Interfaces\LoggerInterface;
+
 class FileToLogger implements LoggerInterface
 {
     /**
      * @var string
      */
     private $fileName;
-    private $fp;
 
     /**
      * FileToLogger constructor.
      *
      * @param string $fileName
      */
-    public function __construct(string $fileName = "correct-brackets-socket.log")
+    public function __construct(string $fileName)
     {
         $this->fileName = $fileName;
-        $this->open();
-    }
-
-    public function open()
-    {
-        $this->fp = fopen($this->fileName , 'a+');
     }
 
     /**
@@ -31,11 +26,7 @@ class FileToLogger implements LoggerInterface
      */
     public function log($message)
     {
-        fwrite($this->fp, $message."\r\n");
+        file_put_contents($this->fileName, "[".date("d.m.Y H:i:s")."]: ". $message. "\r\n", FILE_APPEND);
     }
 
-    public function __destruct()
-    {
-        fclose($this->fp);
-    }
 }

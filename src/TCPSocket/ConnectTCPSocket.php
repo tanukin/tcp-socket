@@ -4,7 +4,7 @@ namespace Socket\TCPSocket;
 
 use Socket\BracketFactory;
 use Socket\Exceptions\EmptyContentException;
-use Socket\Logger\LoggerInterface;
+use Socket\Interfaces\LoggerInterface;
 
 class ConnectTCPSocket
 {
@@ -47,20 +47,18 @@ class ConnectTCPSocket
         if (empty($this->socket))
             throw new EmptyContentException("Don't create socket");
 
-        do {
-            $this->spawn = socket_accept($this->socket->getSocket());
-            $this->logger->log("Connection request received");
+        $this->spawn = socket_accept($this->socket->getSocket());
+        $this->logger->log("Connection request received");
 
-            $welcome = "\nConnection open. \n";
-            $welcome .= "You can send sequence of brackets for validation.\n\n";
-            $welcome .= "To close the session, enter command: exit\n\n";
-            socket_write($this->spawn, $welcome, strlen($welcome));
+        $welcome = "\nConnection open. \n";
+        $welcome .= "You can send sequence of brackets for validation.\n\n";
+        $welcome .= "To close the session, enter command: exit\n\n";
+        socket_write($this->spawn, $welcome, strlen($welcome));
 
-            $this->communication();
+        $this->communication();
 
-            socket_close($this->spawn);
-            $this->logger->log("Connection closed");
-        } while (true);
+        socket_close($this->spawn);
+        $this->logger->log("Connection closed");
     }
 
     protected function communication()

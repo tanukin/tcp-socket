@@ -1,6 +1,6 @@
 <?php
 
-namespace Socket\Logger;
+namespace Socket\Interfaces;
 
 interface LoggerInterface
 {

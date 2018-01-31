@@ -5,34 +5,26 @@ set_time_limit(0);
 
 require __DIR__ . "/../vendor/autoload.php";
 
-use Socket\Logger\TerminalToLogger;
+use Socket\Daemon\Daemon;
+use Socket\Logger\FileToLogger;
 use Socket\TCPSocket\CreateTCPSocket;
 use Socket\BracketFactory;
 use Socket\TCPSocket\ConnectTCPSocket;
-use Socket\TCPSocket\CreateToSeveralProcess;
+use Socket\Options\ConfigFileOptions;
 
 try {
-    $shortOpts = "";
-    $shortOpts .= "p:";
-    $shortOpts .= "h";
+    $logger = new FileToLogger("./bracket-daemon.log");
 
-    $longOpts = array(
-        "port:",
-        "help",
-    );
-
-    $options = getopt($shortOpts, $longOpts);
-
-    $logger = new TerminalToLogger();
+    $options = new ConfigFileOptions("./configFile.yaml");
+    $options = $options->getOptions();
 
     $createTCPSocket = new CreateTCPSocket("localhost", $options, $logger);
     $createTCPSocket->open();
 
     $bracketFactory = new BracketFactory();
-
     $connectTCPSocket = new ConnectTCPSocket($createTCPSocket, $bracketFactory, $logger);
 
-    $createToSeveralProcess = new CreateToSeveralProcess(2, $connectTCPSocket, $logger);
+    $createToSeveralProcess = new Daemon(5, $connectTCPSocket, $logger);
     $createToSeveralProcess->run();
 
 } catch (\Exception $e) {

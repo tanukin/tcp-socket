@@ -6,7 +6,7 @@ use Socket\Exceptions\ContentException;
 use Socket\Exceptions\EmptyContentException;
 use Socket\Exceptions\HelpContentException;
 use Socket\Exceptions\InvalidArgumentContentException;
-use Socket\Logger\LoggerInterface;
+use Socket\Interfaces\LoggerInterface;
 
 class CreateTCPSocket
 {

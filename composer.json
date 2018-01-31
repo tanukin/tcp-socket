@@ -9,6 +9,7 @@
     ],
     "require": {
         "php": "~7.1",
+        "symfony/yaml": "~4.0.0",
         "anikin-elets/correct-brackets": "~1.0.0"
     },
     "autoload":{
