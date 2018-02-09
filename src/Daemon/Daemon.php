@@ -149,22 +149,19 @@ class Daemon implements DaemonInterface
 
     protected function isDaemonRun($pid_file)
     {
-        if (is_file($pid_file)) {
-            $pid = file_get_contents($pid_file);
+        if (!is_file($pid_file))
+            return false;
 
-            if (posix_kill($pid, 0))
-                return true;
+        $pid = file_get_contents($pid_file);
 
-            if (!unlink($pid_file)) {
-                $this->logger->log("Can't delete file $pid_file");
-                exit(-1);
-            }
+        if (posix_kill($pid, 0))
+            return true;
+
+        if (!unlink($pid_file)) {
+            $this->logger->log("Can't delete file $pid_file");
+            exit(-1);
         }
 
         return false;
     }
 }
-
-
-
-
