@@ -27,7 +27,7 @@ class Daemon implements DaemonInterface
     /**
      * @var bool
      */
-    private $DaemonRun;
+    private $DaemonRun = true;
 
     /**
      * @var array
@@ -37,7 +37,12 @@ class Daemon implements DaemonInterface
     /**
      * @var string
      */
-    private $pidFile;
+    private $pidFile = "/tmp/bracket_daemon_pid.tmp";
+
+    /**
+     * @var int
+     */
+    private $sleep = 5;
 
     /**
      * Daemon constructor.
@@ -51,14 +56,10 @@ class Daemon implements DaemonInterface
         $this->countProcess = $countProcess;
         $this->connectTCPSocket = $connectTCPSocket;
         $this->logger = $logger;
-        $this->DaemonRun = true;
-        $this->pidFile = "/tmp/bracket_daemon_pid.tmp";
     }
 
     public function run()
     {
-        declare(ticks=1);
-
         if ($this->isDaemonRun($this->pidFile)) {
             $this->logger->log("Daemon already run");
             exit;
@@ -83,8 +84,13 @@ class Daemon implements DaemonInterface
             fclose(STDOUT);
             fclose(STDERR);
 
+            pcntl_signal(SIGTERM, array($this, "signalHandler"));
+            pcntl_signal(SIGHUP, array($this, "signalHandler"));
+
             while ($this->DaemonRun) {
-                if ($this->DaemonRun and (count($this->countChildProcesses) < $this->countProcess)) {
+                if ($this->DaemonRun && (count($this->countChildProcesses) < $this->countProcess)) {
+
+                    pcntl_signal_dispatch();
 
                     $pid = pcntl_fork();
 
@@ -108,7 +114,7 @@ class Daemon implements DaemonInterface
                     }
 
                 } else {
-                    sleep(10);
+                    sleep($this->sleep);
                 }
 
                 while ($signaled_pid = pcntl_waitpid(-1, $status, WNOHANG)) {
@@ -122,11 +128,6 @@ class Daemon implements DaemonInterface
                     }
                 }
 
-                pcntl_signal(SIGTERM, array($this, "signalHandler"));
-                pcntl_signal(SIGHUP, array($this, "signalHandler"));
-
-                pcntl_signal_dispatch();
-
             }
         }
     }
@@ -135,17 +136,12 @@ class Daemon implements DaemonInterface
     {
         switch ($signo) {
             case SIGTERM:
-                {
                     $this->logger->log("SIGTERM");
                     $this->DaemonRun = false;
-
                     break;
-                }
             case SIGHUP:
-                {
                     $this->logger->log("SIGHUP");
                     break;
-                }
         }
     }
 
@@ -154,15 +150,13 @@ class Daemon implements DaemonInterface
         if (is_file($pid_file)) {
             $pid = file_get_contents($pid_file);
 
-            if (posix_kill($pid, 0)) {
+            if (posix_kill($pid, 0))
                 return true;
-            } else {
-                if (!unlink($pid_file)) {
-                    $this->logger->log("Can't delete file $pid_file");
-                    exit(-1);
-                }
-            }
 
+            if (!unlink($pid_file)) {
+                $this->logger->log("Can't delete file $pid_file");
+                exit(-1);
+            }
         }
 
         return false;
