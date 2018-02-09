@@ -74,7 +74,7 @@ class Daemon implements DaemonInterface
         if ($pid == 0) {
 
             $sid = posix_setsid();
-
+            file_put_contents($this->pidFile, posix_getpid());
             if ($sid < 0) {
                 $this->logger->log("ERROR");
                 exit;
@@ -97,12 +97,14 @@ class Daemon implements DaemonInterface
                     if ($pid) {
 
                         $this->countChildProcesses[$pid] = true;
-                        file_put_contents($this->pidFile, posix_getpid());
+                        cli_set_process_title("bracket-parent");
+
                     }
 
                     if ($pid == 0) {
 
                         $pid = posix_getpid();
+                        cli_set_process_title("bracket-child");
                         $this->logger->log("Child run. pid = $pid");
                         try {
                             $this->connectTCPSocket->run();
