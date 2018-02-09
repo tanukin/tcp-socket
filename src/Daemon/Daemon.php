@@ -138,12 +138,12 @@ class Daemon implements DaemonInterface
     {
         switch ($signo) {
             case SIGTERM:
-                    $this->logger->log("SIGTERM");
-                    $this->DaemonRun = false;
-                    break;
+                $this->logger->log("SIGTERM");
+                $this->DaemonRun = false;
+                break;
             case SIGHUP:
-                    $this->logger->log("SIGHUP");
-                    break;
+                $this->logger->log("SIGHUP");
+                break;
         }
     }
 
