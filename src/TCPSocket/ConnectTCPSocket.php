@@ -23,6 +23,9 @@ class ConnectTCPSocket
      */
     private $logger;
 
+    /**
+     * @var resource
+     */
     private $spawn;
 
     /**
@@ -39,10 +42,29 @@ class ConnectTCPSocket
         $this->logger = $logger;
     }
 
+
+    /**
+     * @return CreateTCPSocket
+     */
+    public function getSocket(): CreateTCPSocket
+    {
+        return $this->socket;
+    }
+
+    public function createTCPSocket()
+    {
+        $this->socket->open();
+    }
+
+    public function closeTCPSocket()
+    {
+        $this->socket->close();
+    }
+
     /**
      * @throws EmptyContentException
      */
-    public function run()
+    public function communication()
     {
         if (empty($this->socket))
             throw new EmptyContentException("Don't create socket");
@@ -55,14 +77,6 @@ class ConnectTCPSocket
         $welcome .= "To close the session, enter command: exit\n\n";
         socket_write($this->spawn, $welcome, strlen($welcome));
 
-        $this->communication();
-
-        socket_close($this->spawn);
-        $this->logger->log("Connection closed");
-    }
-
-    protected function communication()
-    {
         do {
             $input = socket_read($this->spawn, 2048, PHP_BINARY_READ);
             $input = trim($input);
@@ -86,6 +100,8 @@ class ConnectTCPSocket
             }
 
         } while (true);
-    }
 
+        socket_close($this->spawn);
+        $this->logger->log("Connection closed");
+    }
 }

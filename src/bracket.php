@@ -14,17 +14,12 @@ use Socket\Options\ConfigFileOptions;
 
 try {
     $logger = new FileToLogger("./bracket-daemon.log");
-
     $options = new ConfigFileOptions("./configFile.yaml");
-    $options = $options->getOptions();
-
     $createTCPSocket = new CreateTCPSocket("localhost", $options, $logger);
-    $createTCPSocket->open();
-
     $bracketFactory = new BracketFactory();
     $connectTCPSocket = new ConnectTCPSocket($createTCPSocket, $bracketFactory, $logger);
 
-    $createToSeveralProcess = new Daemon(5, $connectTCPSocket, $logger);
+    $createToSeveralProcess = new Daemon(2, $connectTCPSocket, $logger);
     $createToSeveralProcess->run();
 
 } catch (\Exception $e) {
