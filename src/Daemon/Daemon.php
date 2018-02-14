@@ -94,16 +94,14 @@ class Daemon implements DaemonInterface
             $this->connectTCPSocket->createTCPSocket();
 
             while ($this->DaemonRun) {
-                $this->logger->log("1");
                 if ($this->DaemonRun && (count($this->childProcesses) < $this->countProcess)) {
-                    $this->logger->log("2");
+
                     $pid = pcntl_fork();
 
                     if ($pid) {
 
                         $this->childProcesses[$pid] = true;
                         cli_set_process_title("bracket-parent");
-
                     }
 
                     if ($pid == 0) {
@@ -136,7 +134,6 @@ class Daemon implements DaemonInterface
                         $this->childProcesses = [];
                     }
                 }
-
             }
         }
     }
@@ -147,6 +144,7 @@ class Daemon implements DaemonInterface
             case SIGTERM:
                 $this->logger->log("SIGTERM");
                 $this->DaemonRun = false;
+                $this->closeChildProses();
                 break;
             case SIGHUP:
                 $this->logger->log("SIGHUP");
@@ -155,8 +153,8 @@ class Daemon implements DaemonInterface
                     break;
 
                 $this->connectTCPSocket->closeTCPSocket();
+                $this->closeChildProses();
                 $this->connectTCPSocket->createTCPSocket();
-
         }
     }
 
@@ -184,6 +182,15 @@ class Daemon implements DaemonInterface
     private function hasChangePort(): bool
     {
         return $this->connectTCPSocket->getSocket()->getPort() != $this->connectTCPSocket->getSocket()->getNewPort();
+    }
+
+
+    private function closeChildProses(): void
+    {
+        foreach ($this->childProcesses as $process => $val){
+            posix_kill($process, SIGKILL);
+            unset($this->childProcesses[$process]);
+        }
     }
 }
 
