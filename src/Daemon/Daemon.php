@@ -3,12 +3,8 @@
 namespace Socket\Daemon;
 
 use Socket\Exceptions\ContentException;
-use Socket\Exceptions\EmptyContentException;
-use Socket\Exceptions\HelpContentException;
-use Socket\Exceptions\InvalidArgumentContentException;
 use Socket\Interfaces\DaemonInterface;
 use Socket\Interfaces\LoggerInterface;
-use Socket\Options\ConfigFileOptions;
 use Socket\TCPSocket\ConnectTCPSocket;
 
 class Daemon implements DaemonInterface
@@ -17,6 +13,11 @@ class Daemon implements DaemonInterface
      * @var int
      */
     private $countProcess;
+
+    /**
+     * @var bool
+     */
+    private $shouldStartDaemonMode;
 
     /**
      * @var ConnectTCPSocket
@@ -52,12 +53,14 @@ class Daemon implements DaemonInterface
      * Daemon constructor.
      *
      * @param int $countProcess
+     * @param bool $shouldStartDaemonMode
      * @param ConnectTCPSocket $connectTCPSocket
      * @param LoggerInterface $logger
      */
-    public function __construct(int $countProcess, ConnectTCPSocket $connectTCPSocket, LoggerInterface $logger)
+    public function __construct(int $countProcess, bool $shouldStartDaemonMode, ConnectTCPSocket $connectTCPSocket, LoggerInterface $logger)
     {
         $this->countProcess = $countProcess;
+        $this->shouldStartDaemonMode = $shouldStartDaemonMode;
         $this->connectTCPSocket = $connectTCPSocket;
         $this->logger = $logger;
     }
@@ -69,6 +72,65 @@ class Daemon implements DaemonInterface
             exit;
         }
 
+        if ($this->shouldStartDaemonMode)
+            $this->daemonOn();
+        else
+            $this->loop();
+    }
+
+    private function loop()
+    {
+        pcntl_signal(SIGTERM, array($this, "signalHandler"));
+        pcntl_signal(SIGHUP, array($this, "signalHandler"));
+
+        $this->connectTCPSocket->createTCPSocket();
+
+        while ($this->DaemonRun) {
+            if ($this->DaemonRun && (count($this->childProcesses) < $this->countProcess)) {
+
+                $pid = pcntl_fork();
+
+                if ($pid) {
+
+                    $this->childProcesses[$pid] = true;
+                    cli_set_process_title("bracket-parent");
+                }
+
+                if ($pid == 0) {
+
+                    $pid = posix_getpid();
+                    cli_set_process_title("bracket-child");
+                    $this->logger->log("Child run. pid = $pid");
+                    try {
+                        $this->connectTCPSocket->communication();
+                    } catch (ContentException $e) {
+                        $this->logger->log($e->getMessage());
+                        exit($e->getCode());
+                    }
+                    exit(0);
+                }
+
+            } else {
+                sleep($this->sleep);
+            }
+
+            pcntl_signal_dispatch();
+
+            while ($signaled_pid = pcntl_waitpid(-1, $status, WNOHANG)) {
+                if ($signaled_pid != -1) {
+
+                    $pid = posix_getpid();
+                    $this->logger->log("Child closed. pid = $pid");
+                    unset($this->childProcesses[$signaled_pid]);
+                } else {
+                    $this->childProcesses = [];
+                }
+            }
+        }
+    }
+
+    private function daemonOn()
+    {
         $pid = pcntl_fork();
 
         if ($pid) {
@@ -76,7 +138,6 @@ class Daemon implements DaemonInterface
         }
 
         if ($pid == 0) {
-
             $sid = posix_setsid();
             file_put_contents($this->pidFile, posix_getpid());
             if ($sid < 0) {
@@ -88,53 +149,7 @@ class Daemon implements DaemonInterface
             fclose(STDOUT);
             fclose(STDERR);
 
-            pcntl_signal(SIGTERM, array($this, "signalHandler"));
-            pcntl_signal(SIGHUP, array($this, "signalHandler"));
-
-            $this->connectTCPSocket->createTCPSocket();
-
-            while ($this->DaemonRun) {
-                if ($this->DaemonRun && (count($this->childProcesses) < $this->countProcess)) {
-
-                    $pid = pcntl_fork();
-
-                    if ($pid) {
-
-                        $this->childProcesses[$pid] = true;
-                        cli_set_process_title("bracket-parent");
-                    }
-
-                    if ($pid == 0) {
-
-                        $pid = posix_getpid();
-                        cli_set_process_title("bracket-child");
-                        $this->logger->log("Child run. pid = $pid");
-                        try {
-                            $this->connectTCPSocket->communication();
-                        } catch (ContentException $e) {
-                            $this->logger->log($e->getMessage());
-                            exit($e->getCode());
-                        }
-                        exit;
-                    }
-
-                } else {
-                    sleep($this->sleep);
-                }
-
-                pcntl_signal_dispatch();
-
-                while ($signaled_pid = pcntl_waitpid(-1, $status, WNOHANG)) {
-                    if ($signaled_pid != -1) {
-
-                        $pid = posix_getpid();
-                        $this->logger->log("Child closed. pid = $pid");
-                        unset($this->childProcesses[$signaled_pid]);
-                    } else {
-                        $this->childProcesses = [];
-                    }
-                }
-            }
+            $this->loop();
         }
     }
 
@@ -158,7 +173,7 @@ class Daemon implements DaemonInterface
         }
     }
 
-    protected function isDaemonRun($pid_file)
+    private function isDaemonRun($pid_file)
     {
         if (!is_file($pid_file))
             return false;
@@ -187,7 +202,7 @@ class Daemon implements DaemonInterface
 
     private function closeChildProses(): void
     {
-        foreach ($this->childProcesses as $process => $val){
+        foreach ($this->childProcesses as $process => $val) {
             posix_kill($process, SIGKILL);
             unset($this->childProcesses[$process]);
         }

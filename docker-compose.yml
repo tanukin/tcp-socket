@@ -1,0 +1,11 @@
+version: '2'
+services:
+  bracket:
+    build:
+      context: '.'
+      dockerfile: 'Dockerfile'
+    container_name: 'bracket'
+    volumes:
+      - '.:/var/app'
+    ports:
+      - '12345:12345'

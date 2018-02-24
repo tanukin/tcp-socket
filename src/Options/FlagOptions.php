@@ -11,6 +11,7 @@ class FlagOptions implements OptionsInterface
         $shortOpts = "";
         $shortOpts .= "p:";
         $shortOpts .= "h";
+        $shortOpts .= "g:";
 
         $longOpts = array(
             "port:",
