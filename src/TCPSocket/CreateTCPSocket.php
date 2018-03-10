@@ -7,6 +7,7 @@ use Socket\Exceptions\EmptyContentException;
 use Socket\Exceptions\HelpContentException;
 use Socket\Exceptions\InvalidArgumentContentException;
 use Socket\Interfaces\LoggerInterface;
+use Socket\Interfaces\OptionsInterface;
 
 class CreateTCPSocket
 {
@@ -16,7 +17,7 @@ class CreateTCPSocket
     private $host;
 
     /**
-     * @var array
+     * @var OptionsInterface
      */
     private $options;
 
@@ -29,68 +30,88 @@ class CreateTCPSocket
      * @var int
      */
     private $port;
+
+    /**
+     * @var resource
+     */
     private $socket;
 
     /**
      * CreateTCPSocket constructor.
      *
      * @param string $host
-     * @param array $options
+     * @param OptionsInterface $options
      * @param LoggerInterface $logger
      */
-    public function __construct(string $host, array $options, LoggerInterface $logger)
+    public function __construct(string $host, OptionsInterface $options, LoggerInterface $logger)
     {
         $this->host = $host;
         $this->options = $options;
         $this->logger = $logger;
     }
 
-    public function __destruct()
+    /**
+     * @return int
+     */
+    public function getPort(): int
     {
-        $this->close();
+        return $this->port;
     }
 
-    public function open()
-    {
-        try {
-            $this->parseOptions();
-        } catch (ContentException $e) {
-            $this->logger->log($e->getMessage());
-            die();
-        }
-
-        $this->socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
-        socket_set_option($this->socket, SOL_SOCKET, SO_REUSEADDR, 1);
-        socket_bind($this->socket, $this->host, $this->port);
-        socket_listen($this->socket, 3);
-        $this->logger->log("Waiting to connect (port = $this->port) ...");
-    }
-
-    public function close()
-    {
-        if (!empty($this->socket)) {
-            socket_close($this->socket);
-            $this->logger->log("Connection closed (port = $this->port)");
-        }
-    }
-
+    /**
+     * @return resource
+     */
     public function getSocket()
     {
         return $this->socket;
     }
 
+    public function open()
+    {
+        $this->port = $this->getNewPort();
+
+        $this->socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
+        socket_set_option($this->socket, SOL_SOCKET, SO_REUSEADDR, 1);
+        socket_bind($this->socket, $this->host, $this->port);
+        socket_listen($this->socket);
+        $this->logger->log("Waiting to connect (port = $this->port) ...");
+    }
+
+
+    public function getNewPort(): int
+    {
+        try {
+            $port = $this->parseOptions($this->readOptions());
+        } catch (ContentException $e) {
+            $this->logger->log($e->getMessage());
+            die();
+        }
+        return $port;
+    }
     /**
+     * @return array
+     */
+    private function readOptions(): array
+    {
+        return $this->options->getOptions();
+    }
+
+    /**
+     * @param array $options
+     *
+     * @return int
+     *
      * @throws EmptyContentException
      * @throws HelpContentException
      * @throws InvalidArgumentContentException
      */
-    protected function parseOptions()
+    private function parseOptions(array $options): int
     {
-        if (empty($this->options))
+        if (empty($options))
             throw new EmptyContentException("Port number not received. \nFor help, specify the flag: -h, --help");
 
 
-        switch (array_keys($this->options)[0]) {
+        switch (array_keys($options)[0]) {
             case "p":
                 $flag = "p";
                 break;
@@ -124,11 +145,24 @@ Flags.
 HTML
             );
 
-        $port = (int)$this->options[$flag];
+        $port = (int)$options[$flag];
 
         if ($port == 0)
             throw new EmptyContentException("Invalid flag or port.");
 
-        $this->port = $port;
+        return $port;
+    }
+
+    public function close()
+    {
+        if (!empty($this->socket)) {
+            socket_close($this->socket);
+            $this->logger->log("Connection closed (port = $this->port)");
+        }
+    }
+
+    public function __destruct()
+    {
+        $this->close();
     }
 }
